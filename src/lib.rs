@@ -53,10 +53,27 @@ impl EpubDocument {
         out: &mut File,
     ) -> Result<(), Box<dyn Error>> {
         let mut out_zip = zip::ZipWriter::new(out);
+        
+
+        // write mimetype
+        let mut options = zip::write::FileOptions::default();
+        options = zip::write::FileOptions::compression_method(options, zip::CompressionMethod::Stored);
+        out_zip.start_file("mimetype", options)?;
+        out_zip.write_all(b"application/epub+zip")?;
+
+
+        // set compression for the rest of the files
+        options = zip::write::FileOptions::compression_method(options, zip::CompressionMethod::Deflated);
+        options = zip::write::FileOptions::compression_level(options, Some(9));
+        
+
         for i in 0..self.zip.len() {
             let mut file = self.zip.by_index(i)?;
 
-            let options = zip::write::FileOptions::default();
+            // mimetype was already added
+            if file.name() == "mimetype" {
+                continue;
+            }
 
             out_zip.start_file(file.name(), options)?;
             let mut buf = Vec::new();
