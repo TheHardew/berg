@@ -180,11 +180,25 @@ impl BionicTransformer {
     }
 
     fn bionic_word(word: &str) -> String {
+        // TODO compound words, e.g. Bionic-Typography
+
+
         if word.split_whitespace().count() == 0 {
             return String::from(word);
         }
 
-        let mid_point = word.chars().count() / 2;
+        // numbers are not processed
+        // may fail with numbers inside words
+        // not sure how to treat such cases
+        if word.chars().next().unwrap().is_digit(10) {
+            return String::from(word);
+        }
+
+        let length = word.chars().count();
+        let mid_point = match length {
+            1..=3 => 1,
+            _ => (6 * length + 5) / 10, // length * 0.6, round to nearest
+        };
 
         let chars: Vec<char> = word.chars().collect();
         let split_chars = chars.split_at(mid_point);
