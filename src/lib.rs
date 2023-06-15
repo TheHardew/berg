@@ -67,9 +67,9 @@ impl EpubDocument {
 
                 let styled_content = Self::transform_html(content, &transformer);
 
-                out_zip.write(styled_content.as_bytes())?;
+                out_zip.write_all(styled_content.as_bytes())?;
             } else {
-                out_zip.write(&buf)?;
+                out_zip.write_all(&buf)?;
             }
         }
 
