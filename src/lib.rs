@@ -180,9 +180,6 @@ impl BionicTransformer {
     }
 
     fn bionic_word(word: &str) -> String {
-        // TODO compound words, e.g. Bionic-Typography
-
-
         if word.split_whitespace().count() == 0 {
             return String::from(word);
         }
@@ -217,7 +214,7 @@ impl BionicTransformer {
     /// ```
     /// use berg::BionicTransformer;
     /// let result = BionicTransformer::bionic("Hello world!");
-    /// assert_eq!(result, "<b>He</b>llo <b>wor</b>ld!");
+    /// assert_eq!(result, "<b>Hel</b>lo <b>wor</b>ld!");
     /// ```
     /// # Note
     /// The implementation is not perfect and it doesn't work well with words that have special characters like `Hello, world!` or `Hello-world!`
@@ -225,13 +222,24 @@ impl BionicTransformer {
     /// - [ ] Fix the implementation to work with special characters
     /// - [ ] Add parameters to control the behavior of the bionic transformer (fixation, saccade, etc.)
     pub fn bionic(text: &str) -> String {
-        // keep the whitespace between words like the original
-        let words = text.split(' ');
+        let mut result = String::new();
+        let mut last = 0;
+        for (index, seperator) in text.match_indices(|c: char| !(c.is_alphanumeric() || c == '\'' || c == '’')) {
+            if last != index {
+                let word = &text[last..index];
+                result = result + &Self::bionic_word(word);
+            }
 
-        words
-            .map(Self::bionic_word)
-            .reduce(|acc, e| String::from(acc + " " + &e))
-            .unwrap_or(String::new())
+            result = result + &seperator;
+            last = index + seperator.len();
+        }
+
+        if last < text.len() {
+            let word = &text[last..];
+            result = result + &Self::bionic_word(word);
+        }
+        
+        result
     }
 }
 
@@ -249,7 +257,7 @@ mod test {
     fn bionic_transform() {
         let result = BionicTransformer::bionic("Hello world!");
 
-        assert_eq!(result, "<b>He</b>llo <b>wor</b>ld!");
+        assert_eq!(result, "<b>Hel</b>lo <b>wor</b>ld!");
     }
 
     #[test]
@@ -280,6 +288,6 @@ mod test {
             &BionicTransformer::new(),
         );
 
-        assert_eq!(result, "<div><h1><b>he</b>llo <span><b>wo</b>rld</span><h1> <p><b>m</b>y <b>na</b>me <b>i</b>s <b>ta</b>her</p></div>");
+        assert_eq!(result, "<div><h1><b>hel</b>lo <span><b>wor</b>ld</span><h1> <p><b>m</b>y <b>na</b>me <b>i</b>s <b>tah</b>er</p></div>");
     }
 }
