@@ -61,12 +61,7 @@ impl EpubDocument {
         out_zip.start_file("mimetype", options)?;
         out_zip.write_all(b"application/epub+zip")?;
 
-
         // set compression for the rest of the files
-        options = zip::write::FileOptions::compression_method(options, zip::CompressionMethod::Deflated);
-        options = zip::write::FileOptions::compression_level(options, Some(9));
-        
-
         for i in 0..self.zip.len() {
             let mut file = self.zip.by_index(i)?;
 
@@ -75,22 +70,37 @@ impl EpubDocument {
                 continue;
             }
 
-            out_zip.start_file(file.name(), options)?;
-            let mut buf = Vec::new();
-            file.read_to_end(&mut buf)?;
+            Self::transform_file(&mut file, &mut out_zip, &transformer)?;
 
-            if file.name().ends_with(".xhtml") {
-                let content = from_utf8(&buf).unwrap();
-
-                let styled_content = Self::transform_html(content, &transformer);
-
-                out_zip.write_all(styled_content.as_bytes())?;
-            } else {
-                out_zip.write_all(&buf)?;
-            }
         }
 
         Ok(())
+    }
+
+    fn transform_file<T: Transformer>(
+        file: &mut zip::read::ZipFile,
+        out_zip: &mut zip::ZipWriter<&mut File>,
+        transformer: &T) -> Result<(), Box<dyn Error>> {
+
+            let mut buf = Vec::new();
+            file.read_to_end(&mut buf)?;
+            
+            let mut options = zip::write::FileOptions::default();
+            options = zip::write::FileOptions::compression_method(options, zip::CompressionMethod::Deflated);
+            options = zip::write::FileOptions::compression_level(options, Some(9));
+            out_zip.start_file(file.name(), options)?;
+            file.read_to_end(&mut buf)?;
+
+            if file.name().ends_with(".xhtml") {
+                let content = from_utf8(&buf).unwrap_or("");
+                let styled_content = Self::transform_html(content, transformer);
+                out_zip.write_all(styled_content.as_bytes())?;
+            }
+            else {
+                out_zip.write_all(&buf)?;
+            }
+
+            Ok(())
     }
 
     /// Transform the html content of the epub file using a Transformer
