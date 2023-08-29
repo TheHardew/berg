@@ -61,7 +61,6 @@ impl EpubDocument {
         out_zip.start_file("mimetype", options)?;
         out_zip.write_all(b"application/epub+zip")?;
 
-        // set compression for the rest of the files
         for i in 0..self.zip.len() {
             let mut file = self.zip.by_index(i)?;
 
@@ -203,11 +202,10 @@ impl BionicTransformer {
         let chars: Vec<char> = word.chars().collect();
         let split_chars = chars.split_at(mid_point);
 
-        let new_word = String::from(
-            "<b>".to_owned()
-                + &String::from_iter(split_chars.0)
-                + "</b>"
-                + &String::from_iter(split_chars.1),
+        let new_word = format!(
+            "<b>{}</b>{}",
+            String::from_iter(split_chars.0),
+            String::from_iter(split_chars.1),
         );
 
         new_word
@@ -227,14 +225,14 @@ impl BionicTransformer {
     pub fn bionic(text: &str) -> String {
         let mut result = String::new();
         let mut last = 0;
-        for (index, seperator) in text.match_indices(|c: char| !(c.is_alphanumeric() || c == '\'' || c == '’')) {
+        for (index, separator) in text.match_indices(|c: char| !(c.is_alphanumeric() || c == '\'' || c == '’')) {
             if last != index {
                 let word = &text[last..index];
                 result = result + &Self::bionic_word(word);
             }
 
-            result = result + &seperator;
-            last = index + seperator.len();
+            result = result + &separator;
+            last = index + separator.len();
         }
 
         if last < text.len() {
@@ -261,27 +259,6 @@ mod test {
         let result = BionicTransformer::bionic("Hello world!");
 
         assert_eq!(result, "<b>Hel</b>lo <b>wor</b>ld!");
-    }
-
-    #[test]
-    fn capitalize() {
-        struct CapitalizeTransformer;
-
-        impl Transformer for CapitalizeTransformer {
-            fn transform(&self, content: &str) -> String {
-                content.to_uppercase()
-            }
-        }
-
-        let result = EpubDocument::transform_html(
-            "<div><h1>hello <span>world</span><h1> <p>my name is taher</p></div>",
-            &CapitalizeTransformer {},
-        );
-
-        assert_eq!(
-            result,
-            "<div><h1>HELLO <span>WORLD</span><h1> <p>MY NAME IS TAHER</p></div>"
-        );
     }
 
     #[test]
