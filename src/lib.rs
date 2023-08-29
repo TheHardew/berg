@@ -147,16 +147,9 @@ impl EpubDocument {
             if in_tag || c == '>' || ignore_block {
                 styled_content.push(c);
 
-                if styled_content.ends_with("<style") {
-                    ignore_block = true;
-                } else if styled_content.ends_with("</style") {
-                    ignore_block = false;
-                }
-
-                if styled_content.ends_with("<code") {
-                    ignore_block = true;
-                } else if styled_content.ends_with("</code") {
-                    ignore_block = false;
+                for tag in ["style", "code"] {
+                    ignore_block |= styled_content.ends_with(&format!("<{}", tag));
+                    ignore_block &= !styled_content.ends_with(&format!("</{}", tag));
                 }
             } else {
                 text.push(c);
